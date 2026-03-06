@@ -2,6 +2,16 @@
 
 ## Configuration
 
+### Variables used by scripts
+
+```shell
+PROJECT_ID=$(gcloud config get-value project)
+REGION="us-central1"
+SERVICE_ACCOUNT="token-proxy-sa"
+```
+
+### One time setup
+
 ```shell
 echo -n 'user:password' | gcloud secrets create PROXY_BASIC_AUTH --data-file=-
 echo -n '1.2.3.4,5.6.7.8' | gcloud secrets create PROXY_TRUSTED_IPS --data-file=-
