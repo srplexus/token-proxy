@@ -1,20 +1,45 @@
-# Token Vendor
+# Token Vending Machine
 
-## Configuration
+## Initial configuration
 
-### Variables used by scripts
+This application exchanges a simple username/password for a real Google OAuth 2.0 Access Token, while keeping your infrastructure secure and hidden from the public.
+
+### Phase 1: Identity & Security Setup (The Foundation)
+Create a Service Account and two Secrets. This ensures that even if someone sees this code, they don't have the credentials or know which systems are trusted.
+
+The `PROXY_BASIC_AUTH` secret is a full credential in the form `user:password`. **Do not share this credential** with any other application or system.
+The `PROXY_TRUSTED_IPS` secret is a comma-separated list of IP addresses and/or CIDR blocks. **Access must be limited** to internal networks.
+Modify the defaults in step 5 below to match your specific circumstances.
+
+Run the following commands in Google Cloud Console:
 
 ```shell
+# 1. Configuration variables
 PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
-SERVICE_ACCOUNT="token-proxy-sa"
-```
+SA_NAME="token-vending-sa"
+SA_EMAIL="$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
 
-### One time setup
+# 2. Enable APIs
+gcloud services enable aiplatform.googleapis.com \
+    run.googleapis.com \
+    secretmanager.googleapis.com
 
-```shell
+# 3. Create the Service Account (The Proxy's Identity)
+gcloud iam service-accounts create $SA_NAME \
+    --display-name="Token Vending Proxy"
+
+# 4. Grant Permissions
+# This allows the proxy to generate tokens for Vertex AI
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="roles/aiplatform.user"
+
+# 5. Create the basic auth and trusted IP secrets in Secret Manager
 echo -n 'user:password' | gcloud secrets create PROXY_BASIC_AUTH --data-file=-
-echo -n '1.2.3.4,5.6.7.8' | gcloud secrets create PROXY_TRUSTED_IPS --data-file=-
+echo -n '1.2.3.4,5.6.7.0/24' | gcloud secrets create PROXY_TRUSTED_IPS --data-file=-
+
+# 6. Allow the Proxy to read the basic auth and trusted IP secrets
 gcloud secrets add-iam-policy-binding PROXY_BASIC_AUTH \
   --member="serviceAccount:$SERVICE_ACCOUNT@$PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
