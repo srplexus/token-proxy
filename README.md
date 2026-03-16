@@ -9,7 +9,8 @@ Create a Service Account and two Secrets. This ensures that even if someone sees
 
 The `PROXY_BASIC_AUTH` secret is a full credential in the form `user:password`. **Do not share this credential** with any other application or system.
 The `PROXY_TRUSTED_IPS` secret is a comma-separated list of IP addresses and/or CIDR blocks. **Access must be limited** to internal networks.
-Modify the defaults in step 5 below to match your specific circumstances.
+
+Modify the defaults in step 1 below to match your specific circumstances.
 
 Run the following commands in Google Cloud Console:
 
@@ -19,6 +20,8 @@ PROJECT_ID=$(gcloud config get-value project)
 REGION="us-central1"
 SA_NAME="token-vending-sa"
 SA_EMAIL="$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
+PROXY_BASIC_AUTH="user:password"
+PROXY_TRUSTED_IPS="1.2.3.4,5.6.7.0/24"
 
 # 2. Enable APIs
 gcloud services enable aiplatform.googleapis.com \
@@ -36,8 +39,8 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --role="roles/aiplatform.user"
 
 # 5. Create the basic auth and trusted IP secrets in Secret Manager
-echo -n 'user:password' | gcloud secrets create PROXY_BASIC_AUTH --data-file=-
-echo -n '1.2.3.4,5.6.7.0/24' | gcloud secrets create PROXY_TRUSTED_IPS --data-file=-
+echo -n "$PROXY_BASIC_AUTH" | gcloud secrets create PROXY_BASIC_AUTH --data-file=-
+echo -n "$PROXY_TRUSTED_IPS" | gcloud secrets create PROXY_TRUSTED_IPS --data-file=-
 
 # 6. Allow the Proxy to read the basic auth and trusted IP secrets
 gcloud secrets add-iam-policy-binding PROXY_BASIC_AUTH \
